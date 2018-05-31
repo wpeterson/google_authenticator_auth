@@ -70,7 +70,7 @@ class GoogleAuthenticator
     int = 30
     now = Time.now.to_i / int
     key = Base32.decode @secret_key
-    sha = OpenSSL::Digest::Digest.new('sha1')
+    sha = OpenSSL::Digest.new('sha1')
 
     (-1..1).each do |x|
       bytes = [ now + x ].pack('>q').reverse
