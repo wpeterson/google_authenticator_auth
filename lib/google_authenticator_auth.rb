@@ -9,14 +9,15 @@
 require 'rubygems'
 require 'base32'
 require 'openssl'
+require 'cgi'
 require 'uri'
 
 if RUBY_VERSION >= '1.8.7'
 	require 'securerandom'
 else
 	$stderr.puts 'google_authenticator_auth  Warning: Using rand(). This function is not suitable for cryptographic applications.'
-	class SecureRandom  
-		def self.random_number(val) rand(val)  end 
+	class SecureRandom
+		def self.random_number(val) rand(val)  end
 	end
 end
 
@@ -35,14 +36,20 @@ class GoogleAuthenticator
 
   # Google Charts image URL (resulting image can be scanned by
   # the Google Authenticator app to automaticly import secret key
-  def qrcode_image_url(label,wh=350)
-    "https://chart.googleapis.com/chart?chs=#{wh}x#{wh}&cht=qr&choe=UTF-8&chl=" + uri_parser.escape(qrcode_url(label))
+  def qrcode_image_url(label, options = {})
+    issuer = options[:issuer]
+    image_size = options.fetch(:size, 350)
+    escaped_otp_url = CGI::escape(qrcode_url(label, issuer))
+
+    "https://chart.googleapis.com/chart?chs=#{image_size}x#{image_size}&cht=qr&choe=UTF-8&chl=" + escaped_otp_url
   end
 
   # QRCode URL used to generate a QRCode that can be scanned into
   # Google Authenticator (see qrcode_image_url)
-  def qrcode_url(label)
-    "otpauth://totp/#{label}?secret=#{@secret_key}"
+  def qrcode_url(label, issuer=nil)
+    url = "otpauth://totp/#{label}?secret=#{@secret_key}"
+    url << "&issuer=#{issuer}" if issuer
+    url
   end
 
   # Current secret key
@@ -84,11 +91,6 @@ class GoogleAuthenticator
     end
 
     keys
-  end
-
-  protected
-  def uri_parser
-    @uri_parser ||= URI.const_defined?(:Parser) ? URI::Parser.new : URI
   end
 
 end
